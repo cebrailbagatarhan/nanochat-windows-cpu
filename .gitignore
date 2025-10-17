@@ -3,3 +3,15 @@ __pycache__/
 *.pyc
 rustbpe/target/
 dev-ignore/
+
+# Installers
+*.exe
+*.msi
+
+# Model checkpoints
+*.pt
+*.pth
+*.ckpt
+
+# Data cache
+.cache/
