@@ -9,8 +9,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = ""  # CPU kullan
 
 import torch
 import time
-from nanochat.gpt import GPT, GPTConfig
-from nanochat.tokenizer import get_tokenizer
+from nanochat.gpt_cpu import CPUCompatibleGPT, GPTConfig
 
 print("=" * 80)
 print("🐢 CPU Minimal Eğitim Demo (ÇOK YAVAŞ!)")
@@ -33,7 +32,7 @@ print(f"   - Sequence uzunluğu: {config.sequence_len}")
 
 # Model oluştur
 device = "cpu"
-model = GPT(config)
+model = CPUCompatibleGPT(config)
 
 # CPU için float32 kullan (bfloat16 desteklenmez)
 model = model.to(device).to(torch.float32)
@@ -60,9 +59,16 @@ model.train()
 for step in range(num_steps):
     start_time = time.time()
     
-    # Rastgele veri oluştur
-    x = torch.randint(0, config.vocab_size, (batch_size, seq_len), device=device)
-    y = torch.randint(0, config.vocab_size, (batch_size, seq_len), device=device)
+    # Aynı rastgele sequence üzerinde gerçek next-token hedefi oluştur.
+    # Bu hâlâ yalnızca smoke testtir; bağımsız rastgele x/y kullanmaz.
+    tokens = torch.randint(
+        0,
+        config.vocab_size,
+        (batch_size, seq_len + 1),
+        device=device,
+    )
+    x = tokens[:, :-1]
+    y = tokens[:, 1:]
     
     # Forward pass
     logits, loss = model(x, y)
@@ -87,14 +93,14 @@ print(f"""
 ⚠️  ÖNEMLİ NOTLAR:
 1. Bu sadece kod çalışıyor mu diye test amaçlı
 2. Gerçek veri kullanılmadı (rastgele sayılar)
-3. CPU'da çok yavaş (GPU'da 1000x daha hızlı)
+3. CPU süresi donanım ve PyTorch sürümüne göre ölçülmelidir
 4. Bu kadar küçük model hiçbir şey öğrenemez
 
 🚀 GERÇEKTEn KULLANMAK İÇİN:
 1. Lambda Cloud'dan GPU kirala (8xH100)
 2. speedrun.sh scriptini çalıştır
 3. 4 saat bekle
-4. $100'a gerçek ChatGPT'nin sahip ol!
+4. Sonuçları held-out değerlendirme ile ölç (bu script ChatGPT kalitesi üretmez)
 
 💡 Alternatif: Eğitilmiş modeli indir
    Hugging Face'de başkaları eğitmiş olabilir:

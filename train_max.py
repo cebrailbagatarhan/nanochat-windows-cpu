@@ -12,6 +12,7 @@ import time
 import torch
 import requests
 from pathlib import Path
+from dataclasses import asdict
 
 from nanochat.gpt_cpu import CPUCompatibleGPT, GPTConfig
 from nanochat.tokenizer import get_tokenizer
@@ -31,7 +32,8 @@ data_file = data_dir / "shakespeare.txt"
 
 if not data_file.exists():
     url = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
-    response = requests.get(url)
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
     with open(data_file, 'w', encoding='utf-8') as f:
         f.write(response.text)
     print(f"   ✅ İndirildi")
@@ -140,22 +142,19 @@ for step in range(max_steps):
         if losses['val'] < best_val_loss:
             best_val_loss = losses['val']
             improvement = "🎯 YENİ EN İYİ!"
-        else:
-            improvement = ""
-        print(f"   En iyi val: {best_val_loss:.4f} {improvement}\n")
-        
-        if losses['val'] < best_val_loss:
-            best_val_loss = losses['val']
             checkpoint_path = data_dir / "model_max.pt"
             torch.save({
                 'step': step,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'val_loss': best_val_loss,
-                'config': config,
+                'config': asdict(config),
                 'num_params': num_params,
             }, checkpoint_path)
-            print(f"   💾 En iyi model kaydedildi: {checkpoint_path}\n")
+            print(f"   💾 En iyi model kaydedildi: {checkpoint_path}")
+        else:
+            improvement = ""
+        print(f"   En iyi val: {best_val_loss:.4f} {improvement}\n")
     
     # Her 100 adımda bir ara checkpoint
     if step % 100 == 0 and step > 0:
@@ -164,7 +163,7 @@ for step in range(max_steps):
             'step': step,
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
-            'config': config,
+            'config': asdict(config),
         }, temp_path)
 
 total_time = time.time() - start_time
