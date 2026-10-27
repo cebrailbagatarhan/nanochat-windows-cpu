@@ -266,3 +266,20 @@ Orijinal nanochat lisansına tabidir.
 **🎭 Windows CPU'da nanochat deneyimi!**
 
 Bu proje eğitim ve çalışma zamanı deneyi içindir; kısa Shakespeare koşuları genel amaçlı sohbet modeli kalitesi üretmez.
+
+## CPU eğitim günlüğü özeti (çevrimdışı)
+
+Mevcut `train_fast.py`, `train_medium.py`, `train_max.py` veya
+`train_cpu_shakespeare.py` çıktısını bir metin dosyasına kaydedip eğitim
+başlatmadan özetleyebilirsiniz:
+
+```bash
+python train_fast.py > train.log 2>&1
+python -m scripts.cpu_log_summary train.log --json
+python -m unittest discover -s tests -p 'test_cpu_log_summary.py' -v
+```
+
+Araç yalnızca mevcut metin dosyasını okur; model/checkpoint yüklemez, ağ
+isteği yapmaz ve logu değiştirmez. Adım sayısı yalnızca loga yazılan adımları,
+ortalama süre yalnızca loglanan adımların sürelerini ifade eder. Kısmi
+loglardan eğitim tamamlandı sonucu çıkarılmaz.
