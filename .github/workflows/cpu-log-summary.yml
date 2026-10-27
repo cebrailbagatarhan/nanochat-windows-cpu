@@ -1,0 +1,22 @@
+name: CPU log summary tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run dependency-free log summary tests
+        run: python -m unittest discover -s tests -p 'test_cpu_log_summary.py' -v
+      - name: Check Python syntax
+        run: python -m py_compile scripts/cpu_log_summary.py tests/test_cpu_log_summary.py
