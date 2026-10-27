@@ -45,6 +45,8 @@ python train_cpu_shakespeare.py
 ### 4. Metin Üret
 ```powershell
 python inference_cpu.py
+# veya belirli bir checkpoint:
+python inference_cpu.py --checkpoint ~/.cache/nanochat/shakespeare/model_medium.pt
 ```
 
 ## 📚 Tüm Komutlar
@@ -64,12 +66,12 @@ python inference_cpu.py
 ```python
 config = GPTConfig(
     sequence_len=128,    # Context uzunluğu
-    n_layer=4,           # Transformer katmanları
-    n_head=4,            # Attention heads
-    n_embd=256,          # Embedding boyutu
+    n_layer=6,           # Transformer katmanları
+    n_head=6,            # Attention heads
+    n_embd=384,          # Embedding boyutu
 )
 
-max_steps = 100         # Eğitim adımları
+max_steps = 200         # Eğitim adımları
 batch_size = 4          # Batch size
 ```
 
@@ -105,8 +107,8 @@ n_embd = 512
 - **Large (1000 steps, 8 layers)**: ~6-8 saat
 
 ### GPU Karşılaştırması
-- **8xH100**: Aynı işlem 1000x daha hızlı
-- **Orijinal speedrun**: 4 saat, 21,400 steps, 20 layers
+- GPU eğitimi CPU eğitiminden belirgin biçimde hızlıdır; süre donanım, model ve batch ayarına göre ölçülmelidir.
+- Orijinal speedrun ayrı veri, model ve dağıtık eğitim ayarları kullanır; bu CPU Shakespeare deneyiyle kalite açısından eşdeğer değildir.
 
 ## 💡 İpuçları
 
@@ -171,7 +173,7 @@ python train_cpu_shakespeare.py
 # Çıktı:
 # 🎭 nanochat CPU Eğitimi
 # 📥 Veri indiriliyor... ✅
-# 🏗️ Model oluşturuluyor... ✅ 560,988,160 parametre
+# 🏗️ Model oluşturuluyor... ✅ yaklaşık 61M parametre
 # 🚀 EĞİTİM BAŞLIYOR
 # Step 0/100 | Loss: 11.0904 | 0.25s/step
 # Step 20/100 | Loss: 7.3542 | 0.22s/step
@@ -222,7 +224,7 @@ n_layer = 4 → 2
 - Loss tracking
 
 ### ⚠️ Sınırlamalar
-- CPU yavaş (GPU 1000x hızlı)
+- CPU eğitimi yavaştır; hız farkı model ve donanıma göre ölçülmelidir
 - Küçük modeller (bellek sınırı)
 - BFloat16 yerine Float32 (hassasiyet kaybı minimal)
 
@@ -263,4 +265,4 @@ Orijinal nanochat lisansına tabidir.
 
 **🎭 Windows CPU'da nanochat deneyimi!**
 
-Gerçek ChatGPT kalitesi için $100 ile 8xH100 GPU kiralayın ve orijinal speedrun.sh'yi çalıştırın! 🚀
+Bu proje eğitim ve çalışma zamanı deneyi içindir; kısa Shakespeare koşuları genel amaçlı sohbet modeli kalitesi üretmez.
