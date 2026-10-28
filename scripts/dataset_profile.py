@@ -21,6 +21,21 @@ def profile_dataset(path, train_fraction=0.9):
         raise ValueError("Dataset is empty")
     total = len(text)
     train_chars = int(total * train_fraction)
+
+    # Whitespace-only lines are blank; repeated nonblank lines are counted
+    # after stripping outer whitespace, without revealing the line contents.
+    seen_lines = set()
+    blank_lines = 0
+    duplicate_nonempty_lines = 0
+    for line in text.splitlines():
+        normalized = line.strip()
+        if not normalized:
+            blank_lines += 1
+        elif normalized in seen_lines:
+            duplicate_nonempty_lines += 1
+        else:
+            seen_lines.add(normalized)
+
     return {
         "bytes": path.stat().st_size,
         "characters": total,
@@ -29,6 +44,8 @@ def profile_dataset(path, train_fraction=0.9):
         "train_characters": train_chars,
         "validation_characters": total - train_chars,
         "train_fraction": train_fraction,
+        "blank_lines": blank_lines,
+        "duplicate_nonempty_lines": duplicate_nonempty_lines,
     }
 
 
