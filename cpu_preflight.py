@@ -3,6 +3,7 @@
 import argparse
 import importlib.util
 import json
+import math
 import os
 from pathlib import Path
 import platform
@@ -33,21 +34,36 @@ def collect_report(workspace: Path) -> dict:
     return report
 
 
+def non_negative_finite(value: str) -> float:
+    """Parse a finite, non-negative GiB threshold."""
+    try:
+        amount = float(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("GiB threshold must be a number") from exc
+    if not math.isfinite(amount) or amount < 0:
+        raise argparse.ArgumentTypeError("GiB threshold must be finite and non-negative")
+    return amount
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Inspect CPU training prerequisites (no model load)")
     parser.add_argument("--json", action="store_true", help="Output machine-readable JSON")
+    parser.add_argument("--min-free-gib", type=non_negative_finite, help="Return status 1 if disk free GiB is below this threshold")
     parser.add_argument("--workspace", type=Path, default=Path.cwd(), help="Path to check disk space")
     args = parser.parse_args(argv)
     if not args.workspace.is_dir():
         parser.error("--workspace must be an existing directory")
     report = collect_report(args.workspace)
+    if args.min_free_gib is not None:
+        report["minimum_disk_free_gib"] = args.min_free_gib
+        report["disk_requirement_met"] = report["disk_free_gib"] >= args.min_free_gib
     if args.json:
         print(json.dumps(report, indent=2, ensure_ascii=False))
     else:
         for key, value in report.items():
             print(f"{key}: {value if value is not None else 'unavailable'}")
         print("Note: This is an inventory, not a training benchmark or GPU capability test.")
-    return 0
+    return 0 if report.get("disk_requirement_met", True) else 1
 
 
 if __name__ == "__main__":
