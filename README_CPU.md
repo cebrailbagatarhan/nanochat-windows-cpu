@@ -283,3 +283,18 @@ Araç yalnızca mevcut metin dosyasını okur; model/checkpoint yüklemez, ağ
 isteği yapmaz ve logu değiştirmez. Adım sayısı yalnızca loga yazılan adımları,
 ortalama süre yalnızca loglanan adımların sürelerini ifade eder. Kısmi
 loglardan eğitim tamamlandı sonucu çıkarılmaz.
+
+## Yerel veri kümesi satır kalitesi (çevrimdışı)
+
+Veri profil aracı artık boş/yalnızca boşluk içeren satırları
+(`blank_lines`) ve tekrar eden dolu satırları
+(`duplicate_nonempty_lines`) da sayar:
+
+```bash
+python -m scripts.dataset_profile --path ./shakespeare.txt --json
+python -m unittest discover -s tests -p 'test_dataset_profile.py' -v
+```
+
+Tekrarlar baştaki/sondaki boşluklar temizlendikten sonra **büyük/küçük
+harfe duyarlı** karşılaştırılır. Yalnızca toplu sayılar gösterilir;
+metin satırları yazdırılmaz. Bu metrikler tokenizer token sayısı değildir.
