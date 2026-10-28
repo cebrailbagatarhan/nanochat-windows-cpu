@@ -61,20 +61,20 @@ class DatasetProfileTests(unittest.TestCase):
             self.assertEqual(main(["--path", str(self.path)]), 2)
 
     def test_blank_and_repeated_lines_without_disclosing_text(self):
-        self.path.write_text("Alpha\\r\\n  \\r\\nAlpha\\r\\n Alpha \\r\\nBeta\\r\\n\\r\\n", encoding="utf-8")
+        self.path.write_text("Alpha\r\n  \r\nAlpha\r\n Alpha \r\nBeta\r\n\r\n", encoding="utf-8")
         result = profile_dataset(self.path)
         self.assertEqual(result["blank_lines"], 2)
         self.assertEqual(result["duplicate_nonempty_lines"], 2)
         self.assertNotIn("Alpha", str(result))
 
     def test_repeated_lines_are_case_sensitive(self):
-        self.path.write_text("Alpha\\nalpha\\nAlpha\\n", encoding="utf-8")
+        self.path.write_text("Alpha\nalpha\nAlpha\n", encoding="utf-8")
         result = profile_dataset(self.path)
         self.assertEqual(result["duplicate_nonempty_lines"], 1)
         self.assertEqual(result["blank_lines"], 0)
 
     def test_blank_and_duplicate_metrics_in_json_cli(self):
-        self.path.write_text("a\\na\\n \\n", encoding="utf-8")
+        self.path.write_text("a\na\n \n", encoding="utf-8")
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
             code = main(["--path", str(self.path), "--json"])
