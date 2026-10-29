@@ -47,6 +47,41 @@ class CpuLogSummaryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'No CPU training metrics'):
             summarize_lines(['hello world', 'Val loss: not a number'])
 
+    def test_validation_loss_gate_pass_and_fail(self):
+        with tempfile.TemporaryDirectory() as temp:
+            file = Path(temp) / 'train.log'
+            content = 'Step 5/20 | Loss: 4.0 | 1.0s/step\nVal loss: 3.2\nVal loss: 2.8\n'
+            file.write_text(content, encoding='utf-8')
+            for threshold, expected in ((2.8, 0), (2.7, 1)):
+                with self.subTest(threshold=threshold):
+                    output = io.StringIO()
+                    with contextlib.redirect_stdout(output):
+                        code = main([str(file), '--json', '--max-best-val-loss', str(threshold)])
+                    self.assertEqual(code, expected)
+                    result = json.loads(output.getvalue())
+                    self.assertEqual(result['max_best_validation_loss'], threshold)
+                    self.assertEqual(result['validation_loss_requirement_met'], expected == 0)
+            self.assertEqual(file.read_text(encoding='utf-8'), content)
+
+    def test_validation_gate_requires_logged_validation_metric(self):
+        with tempfile.TemporaryDirectory() as temp:
+            file = Path(temp) / 'partial.log'
+            file.write_text('Step 1/50 | Loss: 5.0 | 0.2s/step\n', encoding='utf-8')
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                self.assertEqual(main([str(file), '--max-best-val-loss', '5']), 1)
+            self.assertIn('validation_loss_requirement_met: False', output.getvalue())
+
+    def test_validation_gate_rejects_invalid_thresholds(self):
+        with tempfile.TemporaryDirectory() as temp:
+            file = Path(temp) / 'train.log'
+            file.write_text('Step 1/50 | Loss: 5.0\n', encoding='utf-8')
+            for threshold in ('-1', 'nan', 'inf', '-inf', 'invalid'):
+                with self.subTest(threshold=threshold), contextlib.redirect_stderr(io.StringIO()):
+                    with self.assertRaises(SystemExit) as error:
+                        main([str(file), '--max-best-val-loss', threshold])
+                    self.assertEqual(error.exception.code, 2)
+
     def test_cli_json_does_not_change_input(self):
         with tempfile.TemporaryDirectory() as temp:
             file = Path(temp) / 'train.log'
