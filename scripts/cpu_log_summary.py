@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import math
 import re
 from pathlib import Path
 from typing import Iterable
@@ -63,22 +64,40 @@ def summarize_lines(lines: Iterable[str]) -> dict:
     }
 
 
+def _nonnegative_finite(value: str) -> float:
+    try:
+        number = float(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError('threshold must be a finite non-negative number') from exc
+    if not math.isfinite(number) or number < 0:
+        raise argparse.ArgumentTypeError('threshold must be a finite non-negative number')
+    return number
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description='Summarize an existing CPU training log (read-only).')
     parser.add_argument('log', type=Path, help='Text log captured from a CPU training script')
     parser.add_argument('--json', action='store_true', help='Print machine-readable JSON')
+    parser.add_argument('--max-best-val-loss', type=_nonnegative_finite, metavar='LOSS',
+                        help='Fail with exit code 1 unless the best logged validation loss is <= LOSS')
     args = parser.parse_args(argv)
     try:
         with args.log.open('r', encoding='utf-8', errors='replace') as source:
             result = summarize_lines(source)
     except (OSError, ValueError) as exc:
         parser.exit(2, f'Error: {exc}\n')
+    if args.max_best_val_loss is not None:
+        result['max_best_validation_loss'] = args.max_best_val_loss
+        result['validation_loss_requirement_met'] = (
+            result['best_validation_loss'] is not None
+            and result['best_validation_loss'] <= args.max_best_val_loss
+        )
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:
         for key, value in result.items():
             print(f'{key}: {value if value is not None else "not logged"}')
-    return 0
+    return 0 if result.get('validation_loss_requirement_met', True) else 1
 
 
 if __name__ == '__main__':
